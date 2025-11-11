@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { WebSocketMessage } from '@/types/game.types';
+import dotenv from "dotenv"
 
-const WS_URL = 'ws://localhost:3001';
+dotenv.config()
+
+const WS_URL = process.env.VITE_WS_URL;
 const MAX_RECONNECT_ATTEMPTS = 5;
 const BASE_RECONNECT_DELAY = 1000;
 const MAX_RECONNECT_DELAY = 10000;
