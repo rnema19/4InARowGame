@@ -9,35 +9,27 @@ dotenv.config();
 const app = express();
 const server = createServer(app);
 
-// CORS Configuration
-const ALLOWED_ORIGINS = [
-  'http://localhost:3000',
-  'http://localhost:5173',
-  'https://4-in-a-row-game-nine.vercel.app',
-  /\.vercel\.app$/ // Allow all Vercel preview deployments
-];
+// Get allowed origins from environment variable
+const allowedOrigins = process.env.ALLOWED_ORIGINS 
+  ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
+  : ['http://localhost:5173', 'http://localhost:3000'];
 
-const corsOptions = {
+// CORS configuration
+app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, Postman, curl, etc.)
+    // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    // Check if origin is in allowed list or matches regex
-    const isAllowed = ALLOWED_ORIGINS.some(allowed => 
-      typeof allowed === 'string' ? allowed === origin : allowed.test(origin)
-    );
-    
-    if (isAllowed) {
+    if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
-      console.log('❌ CORS blocked origin:', origin);
+      console.log(`⚠️  Blocked origin: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
   credentials: true
-};
+}));
 
-app.use(cors(corsOptions));
 app.use(express.json());
 
 // Health check

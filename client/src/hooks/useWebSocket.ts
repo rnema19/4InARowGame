@@ -1,7 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { WebSocketMessage } from '@/types/game.types';
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:3001';
+// Determine WebSocket URL based on environment
+const WS_URL = import.meta.env.MODE === 'production'
+  ? import.meta.env.VITE_WS_URL_PROD
+  : import.meta.env.VITE_WS_URL_DEV || 'ws://localhost:3001';
+
 const MAX_RECONNECT_ATTEMPTS = 5;
 const BASE_RECONNECT_DELAY = 1000;
 const MAX_RECONNECT_DELAY = 10000;
