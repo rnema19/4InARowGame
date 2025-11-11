@@ -9,8 +9,35 @@ dotenv.config();
 const app = express();
 const server = createServer(app);
 
-// Middleware
-app.use(cors());
+// CORS Configuration
+const ALLOWED_ORIGINS = [
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'https://4-in-a-row-game-nine.vercel.app',
+  /\.vercel\.app$/ // Allow all Vercel preview deployments
+];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is in allowed list or matches regex
+    const isAllowed = ALLOWED_ORIGINS.some(allowed => 
+      typeof allowed === 'string' ? allowed === origin : allowed.test(origin)
+    );
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.log('❌ CORS blocked origin:', origin);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Health check

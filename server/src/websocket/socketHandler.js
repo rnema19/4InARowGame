@@ -120,32 +120,58 @@ export class SocketHandler {
               // Get game to find opponent (game still exists even if ended)
               const game = this.gameService.activeGames.get(data.gameId);
               
-              // For PvP games, send move to opponent
-              if (game && !game.isBot) {
-                // Find opponent's session ID by comparing database IDs
-                const currentDbPlayerId = playerSession.dbPlayerId;
-                const opponentDbPlayerId = game.player1Id === currentDbPlayerId ? game.player2Id : game.player1Id;
-                
-                // Find the opponent's session by database ID
-                let opponentSessionId = null;
-                for (const [sessionId, session] of this.gameService.playerSessions.entries()) {
-                  if (session.dbPlayerId === opponentDbPlayerId) {
-                    opponentSessionId = sessionId;
-                    break;
+              if (game) {
+                // For PvP games, send move to opponent
+                if (!game.isBot) {
+                  // Find opponent's session ID by comparing database IDs
+                  const currentDbPlayerId = playerSession.dbPlayerId;
+                  const opponentDbPlayerId = game.player1Id === currentDbPlayerId ? game.player2Id : game.player1Id;
+                  
+                  console.log('🔍 Looking for opponent - Current player DB ID:', currentDbPlayerId, 'Opponent DB ID:', opponentDbPlayerId);
+                  
+                  // Find the opponent's session by database ID
+                  let opponentSessionId = null;
+                  for (const [sessionId, session] of this.gameService.playerSessions.entries()) {
+                    if (session.dbPlayerId === opponentDbPlayerId) {
+                      opponentSessionId = sessionId;
+                      break;
+                    }
+                  }
+                  
+                  if (opponentSessionId) {
+                    const opponentSession = this.gameService.playerSessions.get(opponentSessionId);
+                    if (opponentSession && opponentSession.ws) {
+                      console.log('✅ Sending move to opponent session:', opponentSessionId);
+                      opponentSession.ws.send(JSON.stringify({
+                        type: 'OPPONENT_MOVE',
+                        column: data.column,
+                        position: moveResult.position,
+                        gameState: moveResult.gameState,
+                        result: moveResult.result
+                      }));
+                    } else {
+                      console.log('⚠️  Opponent session found but WebSocket not available');
+                    }
+                  } else {
+                    console.log('⚠️  Opponent session not found for database ID:', opponentDbPlayerId);
+                    console.log('Available sessions:', Array.from(this.gameService.playerSessions.entries()).map(([id, sess]) => ({
+                      sessionId: id,
+                      dbPlayerId: sess.dbPlayerId,
+                      username: sess.username
+                    })));
                   }
                 }
-                
-                if (opponentSessionId) {
-                  const opponentSession = this.gameService.playerSessions.get(opponentSessionId);
-                  if (opponentSession && opponentSession.ws) {
-                    opponentSession.ws.send(JSON.stringify({
-                      type: 'OPPONENT_MOVE',
-                      column: data.column,
-                      ...moveResult
-                    }));
-                  }
-                } else {
-                  console.log('⚠️  Opponent session not found for database ID:', opponentDbPlayerId);
+                // For bot games, trigger bot move if game is not over and it's bot's turn
+                else if (game.isBot && !game.winner && !moveResult.result?.winner && game.currentPlayer === 2) {
+                  console.log('🤖 Triggering bot move...');
+                  // Add a small delay to make it more natural
+                  setTimeout(async () => {
+                    try {
+                      await this.gameService.makeBotMove(data.gameId);
+                    } catch (error) {
+                      console.error('❌ Bot move error:', error);
+                    }
+                  }, 500);
                 }
               }
               break;
