@@ -8,6 +8,7 @@ import Leaderboard from './components/Leaderboard';
 import { Button } from './components/ui/button';
 import { Toaster } from './components/ui/sonner';
 import { toast } from 'sonner';
+import { Analytics } from "@vercel/analytics/react"
 import { 
   GameStatus, 
   Board as BoardType, 
@@ -282,6 +283,7 @@ function App() {
         <Leaderboard sendMessage={sendMessage} lastMessage={lastMessage} />
       )}
       <Toaster />
+      <Analytics />
     </>
   );
 }
